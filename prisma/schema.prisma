@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String           @id @default(cuid())
+  email          String           @unique
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  sessions       Session[]
+  magicLinks     MagicLinkToken[]
+  apiKeys        ApiKey[]
+  auditLogs      AuditLog[]       @relation("UserAuditLogs")
+  adminAuditLogs AuditLog[]       @relation("AdminAuditLogs")
+}
+
+model Admin {
+  id                String      @id @default(cuid())
+  email             String      @unique
+  passwordHash      String
+  totpSecret        String
+  webAuthnCreds     Json?
+  lastLoginAt       DateTime?
+  failedLoginCount  Int         @default(0)
+  lockedUntil       DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  sessions          AdminSession[]
+  auditLogs         AuditLog[]  @relation("AdminAuditLogs")
+}
+
+model Session {
+  id            String   @id @default(cuid())
+  user          User     @relation(fields: [userId], references: [id])
+  userId        String
+  createdAt     DateTime @default(now())
+  expiresAt     DateTime
+  refreshToken  String
+  ipAddress     String?
+  userAgentHash String?
+}
+
+model AdminSession {
+  id            String   @id @default(cuid())
+  admin         Admin    @relation(fields: [adminId], references: [id])
+  adminId       String
+  createdAt     DateTime @default(now())
+  expiresAt     DateTime
+  ipAddress     String?
+  userAgentHash String?
+}
+
+model MagicLinkToken {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  tokenHash   String
+  tokenHmac   String
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  createdAt   DateTime @default(now())
+  ipAddress   String?
+  userAgent   String?
+}
+
+model ApiKey {
+  id              String   @id @default(cuid())
+  user            User?    @relation(fields: [userId], references: [id])
+  userId          String?
+  name            String
+  scopes          String[]
+  tokenFingerprint String  @unique
+  tokenHash       String
+  createdAt       DateTime @default(now())
+  expiresAt       DateTime?
+  lastUsedAt      DateTime?
+  rateLimit       Int      @default(1000)
+  revokedAt       DateTime?
+  metadata        Json?
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorUser    User?    @relation("UserAuditLogs", fields: [actorUserId], references: [id])
+  actorUserId  String?
+  actorAdmin   Admin?   @relation("AdminAuditLogs", fields: [actorAdminId], references: [id])
+  actorAdminId String?
+  event        String
+  context      Json
+  createdAt    DateTime @default(now())
+}
