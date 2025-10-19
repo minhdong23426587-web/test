@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: enterprise-next
+spec:
+  template:
+    spec:
+      containers:
+        - name: web
+          image: ghcr.io/example/enterprise-next:stable
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: ENABLE_WEBAUTHN
+              value: 'true'

@@ -1,0 +1,64 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 8
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm lint
+      - name: Type Check
+        run: pnpm tsc --noEmit
+      - name: Unit Tests
+        run: pnpm test
+      - name: E2E Tests
+        run: pnpm test:e2e
+      - name: Security Scan
+        uses: snyk/actions/node@master
+        with:
+          command: test
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      - name: Build
+        run: pnpm build
+      - name: Build Docker image
+        run: |
+          echo "${{ secrets.REGISTRY_TOKEN }}" | docker login $REGISTRY -u ${{ github.actor }} --password-stdin
+          docker build -t $REGISTRY/${{ github.repository }}:${{ github.sha }} .
+          docker push $REGISTRY/${{ github.repository }}:${{ github.sha }}
+      - name: Deploy
+        if: github.ref == 'refs/heads/main'
+        uses: azure/k8s-deploy@v4
+        with:
+          action: deploy
+          manifests: |
+            k8s/base/deployment.yaml
+            k8s/base/service.yaml
+            k8s/base/ingress.yaml
+          images: |
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG }}
