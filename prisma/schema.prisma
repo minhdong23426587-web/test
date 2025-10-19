@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String     @id @default(uuid())
+  email             String     @unique
+  passwordHash      String?
+  status            UserStatus @default(PENDING_VERIFICATION)
+  riskScore         Int        @default(0)
+  emailVerifiedAt   DateTime?
+  mfaEnabled        Boolean    @default(false)
+  mfaSecret         String?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  sessions          Session[]
+  apiKeys           ApiKey[]
+}
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  DISABLED
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  familyId     String
+  refreshToken String
+  userAgent    String
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  @@index([familyId])
+}
+
+model ApiKey {
+  id        String   @id @default(uuid())
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  name      String
+  scopes    String
+  hashedKey String
+  lastFour  String
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  usage     ApiKeyUsage[]
+}
+
+model ApiKeyUsage {
+  id        String   @id @default(uuid())
+  apiKeyId  String
+  apiKey    ApiKey   @relation(fields: [apiKeyId], references: [id])
+  endpoint  String
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id
+  actorId    String?
+  category   String
+  message    String
+  metadata   Json
+  tamperHash String
+  createdAt  DateTime @default(now())
+}
+
+model SecurityEvent {
+  id        String   @id @default(uuid())
+  type      String
+  ip        String?
+  userId    String?
+  details   Json
+  createdAt DateTime @default(now())
+}
+
+model BackupLog {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  details   Json
+}

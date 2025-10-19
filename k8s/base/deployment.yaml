@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: enterprise-next
+  labels:
+    app: enterprise-next
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: enterprise-next
+  template:
+    metadata:
+      labels:
+        app: enterprise-next
+    spec:
+      serviceAccountName: enterprise-next
+      containers:
+        - name: web
+          image: ghcr.io/example/enterprise-next:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: enterprise-secrets
+                  key: database_url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: enterprise-secrets
+                  key: redis_url
+            - name: UPSTASH_REDIS_REST_URL
+              valueFrom:
+                secretKeyRef:
+                  name: enterprise-secrets
+                  key: upstash_redis_rest_url
+            - name: UPSTASH_REDIS_REST_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: enterprise-secrets
+                  key: upstash_redis_rest_token
+            - name: SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: enterprise-secrets
+                  key: session_secret
+            - name: EMAIL_TOKEN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: enterprise-secrets
+                  key: email_token_secret
+            - name: INTERNAL_ROUTE_PREFIX
+              valueFrom:
+                secretKeyRef:
+                  name: enterprise-secrets
+                  key: internal_route_prefix
+            - name: ADMIN_ROUTE_PREFIX
+              valueFrom:
+                secretKeyRef:
+                  name: enterprise-secrets
+                  key: admin_route_prefix
+            - name: INTERNAL_ROUTE_HEADER_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: enterprise-secrets
+                  key: internal_route_header
+          readinessProbe:
+            httpGet:
+              path: /api/healthz
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /api/healthz
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1
+              memory: 1Gi

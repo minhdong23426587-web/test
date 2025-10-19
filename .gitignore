@@ -1,0 +1,16 @@
+node_modules
+.next
+out
+.env
+.env.*
+*.log
+dist
+coverage
+playwright-report
+.pnp.*
+.DS_Store
+.idea
+.vscode
+pnpm-lock.yaml
+yarn.lock
+package-lock.json

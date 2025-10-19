@@ -1,0 +1,44 @@
+{
+  "info": {
+    "name": "Enterprise Platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Secured API requests with required headers."
+  },
+  "item": [
+    {
+      "name": "Hidden Registration",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "x-internal-route-key", "value": "{{INTERNAL_HEADER}}" }
+        ],
+        "url": {
+          "raw": "{{BASE_URL}}/api/internal/{{INTERNAL_PREFIX}}/auth/register",
+          "host": ["{{BASE_URL}}"],
+          "path": ["api", "internal", "{{INTERNAL_PREFIX}}", "auth", "register"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"ChangeMe!234\"\n}"
+        }
+      }
+    },
+    {
+      "name": "API Key Authenticated Request",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "x-api-key", "value": "{{API_KEY}}" },
+          { "key": "x-request-timestamp", "value": "{{TIMESTAMP}}" },
+          { "key": "x-request-signature", "value": "{{SIGNATURE}}" }
+        ],
+        "url": {
+          "raw": "{{BASE_URL}}/api/keys",
+          "host": ["{{BASE_URL}}"],
+          "path": ["api", "keys"]
+        }
+      }
+    }
+  ]
+}
